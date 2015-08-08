@@ -1,8 +1,6 @@
 # Reportir
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/reportir`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Use Reportir to send your feature spec's screenshots to an s3 bucket as a functional static site. 
 
 ## Installation
 
@@ -22,7 +20,49 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+# spec_helper.rb
+require 'reportir'
+require 'rspec'
+
+RSpec.configure do |config|
+  # Include Reportir's methods in your tests
+  config.include Reportir, type: :feature
+
+  # Send auto-generated results to your configured s3 bucket
+  config.after :each, type: :feature do
+    upload_result_to_s3_as_static_site
+  end
+end
+```
+
+Take Screenshots using the helper method anywhere in your spec.
+Screenshots will display in the order they were taken.
+```ruby
+# spec/features/my_feature_spec.rb
+describe 'My Feature', :type => :feature do
+  it 'does something' do
+    ...
+    s3_screenshot('whatever-bananas')  # 1-whatever-bananas.png
+    ...
+    s3_screenshot('whatever-apples')  # 2-whatever-apples.png
+    ...
+  end
+end
+```
+Just ensure your ENV cars are configured, and run your spec like normal.
+```bash
+# ~/.bashrc
+export ENV['AWS_DEFAULT_BUCKET']=<YOURBUCKETNAME> 
+export ENV['AWS_ACCESS_KEY_ID']=<YOURACCESSKEYID> 
+export ENV['AWS_SECRET_ACCESS_KEY']=<YOURSECRETACCESSKEY> 
+export ENV['AWS_DEFAULT_REGION']=<YOURREGION> 
+
+```
+```bash
+rspec spec/features
+```
+
 
 ## Development
 

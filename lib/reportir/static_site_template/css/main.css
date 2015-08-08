@@ -284,6 +284,8 @@ textarea {
       display: none;
       width: 50%;
       margin: 0 auto;
+      border: 1px solid black;
+      padding: 20px;
     }
 
     #screenshots_container .slidesjs-navigation {

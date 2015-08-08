@@ -1,20 +1,30 @@
 require "reportir/version"
+require 's3_uploader'
+require 'aws-sdk'
 
 module Reportir
-  @@static_site_template_path = 'lib/reportir/static_site_template'
+  @@static_site_template_path = Gem.find_files('reportir')[1] +'/static_site_template'
   @@template_subdirectory_for_test_artifacts = 'test_run'
   @@step = 0
 
   def upload_result_to_s3_as_static_site
+    check_for_env_vars
     clone_template
-    reset_orig_template
+    reset_orig_template # TODO: clone before screenshots are possible
     save_final_markup_in_clone
     write_ractive_models_in_clone(screenshots: screenshot_paths, nav: nav_links)
     upload_clone_to_s3
     delete_local_clone
   end
-
+  
   private
+
+  def check_for_env_vars
+    raise Reportir::Error.new 'Missing ENV AWS_DEFAULT_BUCKET' unless ENV['AWS_DEFAULT_BUCKET']
+    raise Reportir::Error.new 'Missing ENV AWS_SECRET_ACCESS_KEY' unless ENV['AWS_SECRET_ACCESS_KEY']
+    raise Reportir::Error.new 'Missing ENV AWS_ACCESS_KEY_ID' unless ENV['AWS_ACCESS_KEY_ID']
+    raise Reportir::Error.new 'Missing ENV AWS_DEFAULT_REGION' unless ENV['AWS_DEFAULT_REGION']
+  end
 
   def clone_template
     FileUtils.cp_r "#{@@static_site_template_path}/.", clone_dir_path
@@ -25,7 +35,7 @@ module Reportir
   end
 
   def save_final_markup_in_clone
-    screenshot('final')
+    s3_screenshot('final')
     File.open("#{deletable_data_path}/final.html", 'w') {|f| f.write @browser.html }
   end
 
@@ -68,7 +78,7 @@ module Reportir
     "http://#{ENV['AWS_DEFAULT_BUCKET']}.s3-website-#{ENV['AWS_DEFAULT_REGION']}.amazonaws.com/#{test_name}"
   end
 
-  def screenshot(method)
+  def s3_screenshot(method)
     @@step = @@step+=1
     image_name = "#{@@step}-#{method}" 
     FileUtils.mkdir_p(deletable_data_path) unless Dir.exists?(deletable_data_path)
@@ -95,4 +105,5 @@ module Reportir
     puts "> Cleaning out old #{deletable_data_path} directory"
     FileUtils.rm_rf "#{deletable_data_path}/*"
   end
+  class Error < ::StandardError; end
 end
