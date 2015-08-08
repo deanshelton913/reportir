@@ -1,7 +1,7 @@
 require "reportir/version"
 
 module Reportir
-  @@static_site_template_path = 'static_site_template'
+  @@static_site_template_path = 'lib/reportir/static_site_template'
   @@template_subdirectory_for_test_artifacts = 'test_run'
   @@step = 0
 
