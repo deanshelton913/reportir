@@ -278,71 +278,22 @@ textarea {
         page-break-after: avoid;
     }
 }
+body{
+  background-color: #2F2F2F;
+  color:#fff;
+}
 
 
-#screenshots_container {
-      display: none;
-      width: 50%;
-      margin: 0 auto;
-      border: 1px solid black;
-      padding: 20px;
-    }
+#screenshots_container .owl-controls {
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
 
-    #screenshots_container .slidesjs-navigation {
-      margin-top:3px;
-    }
+#screenshots_container .owl-stage{
+  margin-top: 80px;
+}
 
-    #screenshots_container .slidesjs-previous {
-      margin-right: 5px;
-      float: left;
-    }
-
-    #screenshots_container .slidesjs-next {
-      margin-right: 5px;
-      float: left;
-    }
-
-    .slidesjs-pagination {
-      margin: 6px 0 0;
-      float: right;
-      list-style: none;
-    }
-
-    .slidesjs-pagination li {
-      float: left;
-      margin: 0 1px;
-    }
-
-    .slidesjs-pagination li a {
-      display: block;
-      width: 13px;
-      height: 0;
-      padding-top: 13px;
-      background-image: url(../img/pagination.png);
-      background-position: 0 0;
-      float: left;
-      overflow: hidden;
-    }
-
-    .slidesjs-pagination li a.active,
-    .slidesjs-pagination li a:hover.active {
-      background-position: 0 -13px
-    }
-
-    .slidesjs-pagination li a:hover {
-      background-position: 0 -26px
-    }
-
-    #screenshots_container a:link,
-    #screenshots_container a:visited {
-      color: #333
-    }
-
-    #screenshots_container a:hover,
-    #screenshots_container a:active {
-      color: #9e2020
-    }
-
-    .navbar {
-      overflow: hidden
-    }
+#screenshots_container .owl-controls .owl-nav [class*=owl-]{
+  background-color: #716E6E;
+}

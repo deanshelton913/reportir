@@ -3,18 +3,26 @@ require 's3_uploader'
 require 'aws-sdk'
 
 module Reportir
-  @@static_site_template_path = Gem.find_files('reportir')[1] +'/static_site_template'
-  @@template_subdirectory_for_test_artifacts = 'test_run'
   @@step = 0
+  @@tests = [] # has to be array for front-end
 
   def upload_result_to_s3_as_static_site
     check_for_env_vars
-    clone_template
-    reset_orig_template # TODO: clone before screenshots are possible
-    save_final_markup_in_clone
-    write_ractive_models_in_clone(screenshots: screenshot_paths, nav: nav_links)
-    upload_clone_to_s3
-    delete_local_clone
+    clear_previous_results_from_s3
+    save_final_markup
+    write_javascript_models
+    upload_to_s3
+    delete_tmp_files_for_this_test
+  end
+
+  def s3_screenshot(method)
+    create_current_test  #TODO: before-filter??
+    @@step = @@step+=1
+    image_name = "#{@@step}-#{method}" 
+    local_path = "#{local_test_root}/#{image_name}.png"
+    FileUtils.mkdir_p(local_test_root) unless Dir.exists?(local_test_root)
+    @browser.screenshot.save(local_path)
+    current_test[:screenshots] << { name: image_name, src: "#{public_path_for_this_test}/#{image_name}.png" }
   end
   
   private
@@ -26,84 +34,98 @@ module Reportir
     raise Reportir::Error.new 'Missing ENV AWS_DEFAULT_REGION' unless ENV['AWS_DEFAULT_REGION']
   end
 
-  def clone_template
-    FileUtils.cp_r "#{@@static_site_template_path}/.", clone_dir_path
+  def delete_tmp_files_for_this_test
+    FileUtils.rm_rf local_test_root
   end
 
-  def reset_orig_template
-    FileUtils.rm_rf "#{@@static_site_template_path}/#{@@template_subdirectory_for_test_artifacts}"
-  end
-
-  def save_final_markup_in_clone
+  def save_final_markup
     s3_screenshot('final')
-    File.open("#{deletable_data_path}/final.html", 'w') {|f| f.write @browser.html }
+    path = "#{local_test_root}/final.html"
+    File.open(path, 'w') { |f| f.write @browser.html }
+    current_test[:add_links] << { name: 'Markup from Last Page', path: "#{public_path_for_this_test}/final.html" }
   end
 
-  def write_ractive_models_in_clone(data)
-    data.each do |k,v|
-      model = {el: "##{k}_container", template: "##{k}_template", data: {k => v}}
-      File.open("#{clone_dir_path}/js/main.js", "a") { |f| f.write("var #{k} = new Ractive(#{model.to_json});\n") }
-    end
+  def write_javascript_models
+    string = %{
+      var navigation = #{array_of_test_names.to_json};\n
+      var tests = #{@@tests.to_json};\n
+    }
+    File.open(local_model_file_path, "w") { |f| f.write(string) }
   end
 
-  def upload_clone_to_s3
-    puts '====== STARTING S3 UPLOAD ========='
+  def clear_previous_results_from_s3
+    puts "deleting all previous test data from s3"
+    ::Aws::S3::Bucket.new(ENV['AWS_DEFAULT_BUCKET']).delete_objects({
+      delete: {
+        objects: [{ key: "#{public_path_for_this_test}" }],
+        quiet: true
+      }
+    })
+  end
+
+  def upload_to_s3
     puts ''
-    ::Aws::S3::Bucket.new(ENV['AWS_DEFAULT_BUCKET']).clear!
-    ::S3Uploader.upload_directory(clone_dir_path, ENV['AWS_DEFAULT_BUCKET'], { 
-      :destination_dir => test_name, 
+    puts ''
+    puts '====== STARTING S3 UPLOAD ========='
+    ::Aws::S3::Resource.new.bucket(ENV['AWS_DEFAULT_BUCKET']).object('js/models.js').upload_file(local_model_file_path)
+    puts "Uploading #{local_model_file_path} to /js/models.js"
+    ::S3Uploader.upload_directory(local_test_root, ENV['AWS_DEFAULT_BUCKET'], { 
+      :destination_dir => public_path_for_this_test, 
       :threads => 5, 
       s3_key: ENV['AWS_ACCESS_KEY_ID'], 
       s3_secret: ENV['AWS_SECRET_ACCESS_KEY'], 
       region: ENV['AWS_DEFAULT_REGION'] })   
     puts ''
+    puts ''
     puts '====== S3 UPLOAD COMPLETE ========='
     puts 'URL: ' + static_site_url
     puts '==================================='
+    puts ''
+    puts ''
   end
 
-  def delete_local_clone
-    FileUtils.rm_rf clone_dir_path
+  def current_test
+    @@tests.select{ |test| test[:name] == test_name }.first
+  end
+
+  def create_current_test
+    if !current_test || current_test.empty? 
+      @@tests << { name: test_name, screenshots: [], add_links: [] }
+    end
+  end
+
+  def array_of_test_names
+    @@tests.map{|t| t[:name] }
+  end
+
+  def local_model_file_path
+    "#{local_root}/models.js"
+  end
+
+  def local_test_root
+    "#{local_root}/#{public_path_for_this_test}"
+  end
+
+  def local_root
+    "./tmp/reportir"
+  end
+
+  def public_path_for_this_test
+    "#{public_artifact_root}/#{test_name}"
+  end
+
+  def public_artifact_root
+    "test_artifacts"
   end
 
   def test_name
-    RSpec.current_example.metadata[:full_description].gsub(/[^\w\s]/,'').gsub(/\s/,'_')
-  end
-
-  def clone_dir_path
-    "./tmp/#{test_name}"
+    ::RSpec.current_example.metadata[:test_name] || ::RSpec.current_example.metadata[:full_description].gsub(/[^\w\s]/,'').gsub(/\s/,'_')
   end
 
   def static_site_url
-    "http://#{ENV['AWS_DEFAULT_BUCKET']}.s3-website-#{ENV['AWS_DEFAULT_REGION']}.amazonaws.com/#{test_name}"
+    # TODO: use aws-sdk for this.
+    "http://#{ENV['AWS_DEFAULT_BUCKET']}.s3-website-#{ENV['AWS_DEFAULT_REGION']}.amazonaws.com"
   end
 
-  def s3_screenshot(method)
-    @@step = @@step+=1
-    image_name = "#{@@step}-#{method}" 
-    FileUtils.mkdir_p(deletable_data_path) unless Dir.exists?(deletable_data_path)
-    @browser.screenshot.save("#{deletable_data_path}/#{image_name}.png")
-  end
-
-  def deletable_data_path
-    "#{clone_dir_path}/#{@@template_subdirectory_for_test_artifacts}"
-  end
-
-  def nav_links
-    {'Last Page as Markup' => "#{@@template_subdirectory_for_test_artifacts}/final.html"}
-  end
-
-  def screenshot_paths
-    images = []
-    Dir["#{deletable_data_path}/**/*.png"].sort_by { |x| x[/\d+/].to_i }.each do |src|
-      images << "#{@@template_subdirectory_for_test_artifacts}/#{Pathname.new(src).basename}"
-    end
-    images
-  end
-
-  def clear_out_any_old_results
-    puts "> Cleaning out old #{deletable_data_path} directory"
-    FileUtils.rm_rf "#{deletable_data_path}/*"
-  end
   class Error < ::StandardError; end
 end

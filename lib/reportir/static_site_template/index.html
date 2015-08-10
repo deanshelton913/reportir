@@ -1,78 +1,104 @@
 <!doctype html>
 <html class="no-js" lang="">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>SHS integrations Results</title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
-        <link rel="apple-touch-icon" href="apple-touch-icon.png">
-        <!-- Place favicon.ico in the root directory -->
-
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/vendor/bootstrap.min.css"/>
-        <link rel="stylesheet" href="css/vendor/font-awesome.min.css"/>
-
-        <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-    </head>
-    <body>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>SHS integrations Results</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <!-- Place favicon.ico in the root directory -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/vendor/bootstrap.min.css"/>
+    <link rel="stylesheet" href="css/vendor/owl.carousel.css">
+    <link rel="stylesheet" href="css/vendor/owl.default.theme.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+  </head>
+  <body>
     <nav class="navbar navbar-inverse">
-        <div class="container-fluid">
-            <div class="navbar-header">
-              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav_container" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-              </button>
-              <a class="navbar-brand" href="#">SHS-Features</a>
-            </div>
-            <div class="collapse navbar-collapse" id="nav_container">
-            </div><!-- /.navbar-collapse -->
-        </div><!-- /.container-fluid -->
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation_container" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Reportir</a></span>
+        </div>
+        <div class="collapse navbar-collapse" id="navigation_container">
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container-fluid -->
     </nav>
-        <!--[if lt IE 8]>
-            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-        <![endif]-->
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <div id="screenshots_container"></div>
 
-        <!-- Add your site or application content here -->
-        <div id="screenshots_container"></div>
+    <script id='navigation_template' type='text/ractive'>
+      <ul class="nav navbar-nav">
+      {{#tests}}
+        <li><a href="#{{.}}" data-id="{{@index}}">{{.}}</a>
+      {{/tests}}
+        <li class="dropdown" id="add_links_container"></li>
+      </ul>
+    </script>
 
-        <script id='screenshots_template' type='text/ractive'>
-          {{#screenshots}}
-            <img src="{{.}}" alt="Screenshot"/>
-          {{/screenshots}}
-          <a href="#" class="slidesjs-previous slidesjs-navigation"><i class="icon-chevron-left icon-large"></i></a>
-          <a href="#" class="slidesjs-next slidesjs-navigation"><i class="icon-chevron-right icon-large"></i></a>
-        </script>
+    <script id='screenshots_template' type='text/ractive'>
+      {{#screenshots}}
+        <img src="{{src}}" alt="{{name}}"/>
+      {{/screenshots}}
+    </script>
 
-        <script id='nav_template' type='text/ractive'>
-          <ul class="nav navbar-nav">
-          {{#each nav}}
-            <li><a href="{{this}}">{{@key}}</a>
-          {{/each}}
-          </ul>
-        </script>
-
-        <script src='http://cdn.ractivejs.org/latest/ractive.min.js'></script>
-        <script src='js/vendor/jquery-1.11.3.min.js'></script>
-        <script src='js/vendor/bootstrap.min.js'></script>
-        <script src='js/vendor/jquery.slides.min.js'></script>
-        <script src="js/plugins.js"></script>
-        <script src="js/main.js"></script>
+    <script id="add_links_template" type="text/ractive">      
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+      <ul class="dropdown-menu">
+        {{#add_links}}
+          <li><a href="{{path}}">{{name}}</a></li>
+        {{/add_links}}
+      </ul>
+    </script>
 
 
-        <script type="text/javascript">
-            $(function() {
-              $('#screenshots_container').slidesjs({
-                width: 500,
-                height: 500,
-                navigation: true
-              });
-            });
-        </script>
-       
-    </body>
+    <script src='http://cdn.ractivejs.org/latest/ractive.min.js'></script>
+    <script src='js/vendor/jquery-1.11.3.min.js'></script>
+    <script src='js/vendor/bootstrap.min.js'></script>
+    <script src="js/vendor/owl.carousel.min.js"></script>
+    <script src="js/plugins.js"></script>
+    <script src="js/models.js"></script>
+    <script type="text/javascript">
+      $(function() {
+          var screenshots = new Ractive({el: '#screenshots_container', template: '#screenshots_template', data: tests[0]});
+          var nav = new Ractive({el: '#navigation_container', template: '#navigation_template', data: {'tests': navigation}});
+          var add_links = new Ractive({el: '#add_links_container', template: '#add_links_template', data: tests[0]});
+          
+          $('nav a').click(function(){
+              var id = $(this).data('id')
+              screenshots.set(tests[id]);
+              add_links.set(tests[id]);
+          });
+      
+          $('#screenshots_container').owlCarousel({
+              loop:false,
+              margin:10,
+              nav:true,
+              autoheight:true,
+              responsive:{
+                  0:{
+                      items:1
+                  },
+                  600:{
+                      items:3
+                  },
+                  1000:{
+                      items:5
+                  }
+              }
+           })
+      });
+    </script>
+  </body>
 </html>
