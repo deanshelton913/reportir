@@ -5,7 +5,7 @@ require 'aws-sdk'
 #TODO: RSpec::Core::Formatters.register
 
 module Reportir
-  @@step = 0
+  @@step = 0  #TODO: Dont use class variables! Use class instance vars
   @@tests = [] # has to be array for front-end
 
   def upload_result_to_s3_as_static_site
@@ -93,6 +93,7 @@ module Reportir
       var navigation = #{array_of_test_names.to_json};
       var tests = #{@@tests.to_json};
     }
+    FileUtils.mkdir_p("#{local_root}/js")
     File.open(local_model_file_path, "w") { |f| f.write(string) }
   end
 
